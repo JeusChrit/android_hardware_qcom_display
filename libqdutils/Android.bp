@@ -3,7 +3,6 @@ cc_library_shared {
     vendor: true,
     defaults: ["display_defaults"],
     header_libs: [
-        "libhardware_headers",
         "libutils_headers",
     ],
     shared_libs: [
@@ -18,10 +17,4 @@ cc_library_shared {
         "qd_utils.cpp",
         "display_config.cpp",
     ],
-    sanitize: {
-        misc_undefined: [
-        "signed-integer-overflow",
-        "unsigned-integer-overflow",
-        ],
-    }
 }

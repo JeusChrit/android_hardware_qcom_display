@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2014 - 2020, The Linux Foundation. All rights reserved.
+* Copyright (c) 2014 - 2018, The Linux Foundation. All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without modification, are permitted
 * provided that the following conditions are met:
@@ -65,11 +65,7 @@ class ResourceDefault : public ResourceInterface {
   DisplayError SetMaxBandwidthMode(HWBwModes mode);
   virtual DisplayError SetDetailEnhancerData(Handle display_ctx,
                                              const DisplayDetailEnhancerData &de_data);
-  virtual DisplayError UpdateSyncHandle(Handle display_ctx,
-                                        const shared_ptr<Fence> &sync_handle);
   virtual DisplayError Perform(int cmd, ...) { return kErrorNone; }
-  DisplayError SetDisplayState(int32_t display_id, DisplayState state) { return kErrorNone; }
-  virtual bool IsRotatorSupportedFormat(LayerBufferFormat format) { return false; }
 
  private:
   enum PipeOwner {
@@ -146,6 +142,7 @@ class ResourceDefault : public ResourceInterface {
   DisplayError CalculateDecimation(float downscale, uint8_t *decimation);
   DisplayError GetScaleLutConfig(HWScaleLutInfo *lut_info);
 
+  Locker locker_;
   HWResourceInfo hw_res_info_;
   HWBlockContext hw_block_ctx_[kHWBlockMax];
   std::vector<SourcePipe> src_pipes_;

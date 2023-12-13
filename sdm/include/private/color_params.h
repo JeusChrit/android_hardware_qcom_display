@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2019, The Linux Foundataion. All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are
@@ -32,8 +32,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <display_color_processing.h>
-#include <dpps_control_interface.h>
 #include <utils/locker.h>
 #include <utils/constants.h>
 #include <core/sdm_types.h>
@@ -44,9 +42,6 @@
 #include "hw_info_types.h"
 
 namespace sdm {
-
-/* max customer extended render intent */
-#define MAX_EXTENDED_RENDER_INTENT    0x1ff
 
 // Bitmap Pending action to indicate to the caller what's pending to be taken care of.
 enum PendingAction {
@@ -93,7 +88,6 @@ static const std::string kDynamicRangeAttribute = "DynamicRange";
 static const std::string kColorGamutAttribute = "ColorGamut";
 static const std::string kPictureQualityAttribute = "PictureQuality";
 static const std::string kGammaTransferAttribute = "GammaTransfer";
-static const std::string kRenderIntentAttribute = "RenderIntent";
 
 static const std::string kHdr = "hdr";
 static const std::string kSdr = "sdr";
@@ -191,11 +185,10 @@ struct PPFeatureVersion {
 struct PPHWAttributes : HWResourceInfo, HWPanelInfo, DisplayConfigVariableInfo {
   char panel_name[256] = "generic_panel";
   PPFeatureVersion version;
-  DppsControlInterface *dpps_intf = NULL;
+  int panel_max_brightness = 0;
 
   void Set(const HWResourceInfo &hw_res, const HWPanelInfo &panel_info,
-           const DisplayConfigVariableInfo &attr, const PPFeatureVersion &feature_ver,
-           DppsControlInterface *dpps_intf);
+           const DisplayConfigVariableInfo &attr, const PPFeatureVersion &feature_ver);
 };
 
 struct PPDisplayAPIPayload {
@@ -277,6 +270,47 @@ struct PPFrameCaptureData {
   uint8_t *buffer;
   uint32_t buffer_stride;
   uint32_t buffer_size;
+};
+
+static const uint32_t kDeTuningFlagSharpFactor = 0x01;
+static const uint32_t kDeTuningFlagClip = 0x02;
+static const uint32_t kDeTuningFlagThrQuiet = 0x04;
+static const uint32_t kDeTuningFlagThrDieout = 0x08;
+static const uint32_t kDeTuningFlagThrLow = 0x10;
+static const uint32_t kDeTuningFlagThrHigh = 0x20;
+static const uint32_t kDeTuningFlagContentQualLevel = 0x40;
+
+typedef enum {
+  kDeContentQualUnknown,
+  kDeContentQualLow,
+  kDeContentQualMedium,
+  kDeContentQualHigh,
+  kDeContentQualMax,
+} PPDEContentQualLevel;
+
+typedef enum {
+  kDeContentTypeUnknown,
+  kDeContentTypeVideo,
+  kDeContentTypeGraphics,
+  kDeContentTypeMax,
+} PPDEContentType;
+
+struct PPDETuningCfg {
+  uint32_t flags = 0;
+  int32_t sharp_factor = 0;
+  uint16_t thr_quiet = 0;
+  uint16_t thr_dieout = 0;
+  uint16_t thr_low = 0;
+  uint16_t thr_high = 0;
+  uint16_t clip = 0;
+  PPDEContentQualLevel quality = kDeContentQualUnknown;
+  PPDEContentType content_type = kDeContentTypeUnknown;
+};
+
+struct PPDETuningCfgData {
+  uint32_t cfg_en = 0;
+  PPDETuningCfg params;
+  bool cfg_pending = false;
 };
 
 struct SDEGamutCfg {

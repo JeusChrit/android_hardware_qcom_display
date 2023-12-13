@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2018, The Linux Foundation. All rights reserved.
 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -77,11 +77,20 @@ AdrenoMemInfo::AdrenoMemInfo() {
   } else {
     ALOGE(" Failed to load libadreno_utils.so");
   }
+
+  // Check if the overriding property debug.gralloc.gfx_ubwc_disable
+  // that disables UBWC allocations for the graphics stack is set
   char property[PROPERTY_VALUE_MAX];
   property_get(DISABLE_UBWC_PROP, property, "0");
   if (!(strncmp(property, "1", PROPERTY_VALUE_MAX)) ||
       !(strncmp(property, "true", PROPERTY_VALUE_MAX))) {
-     gfx_ubwc_disable_ = true;
+    gfx_ubwc_disable_ = true;
+  }
+
+  property_get(DISABLE_AHARDWAREBUFFER_PROP, property, "0");
+  if (!(strncmp(property, "1", PROPERTY_VALUE_MAX)) ||
+      !(strncmp(property, "true", PROPERTY_VALUE_MAX))) {
+    gfx_ahardware_buffer_disable_ = true;
   }
 }
 
@@ -89,10 +98,6 @@ AdrenoMemInfo::~AdrenoMemInfo() {
   if (libadreno_utils_) {
     ::dlclose(libadreno_utils_);
   }
-}
-
-void AdrenoMemInfo::AdrenoSetProperties(gralloc::GrallocProperties props) {
-  gfx_ahardware_buffer_disable_ = props.ahardware_buffer_disable;
 }
 
 void AdrenoMemInfo::AlignUnCompressedRGB(int width, int height, int format, int tile_enabled,
@@ -116,8 +121,7 @@ void AdrenoMemInfo::AlignUnCompressedRGB(int width, int height, int format, int 
       break;
   }
 
-  surface_tile_mode_t tile_mode = static_cast<surface_tile_mode_t>(tile_enabled);
-  surface_rastermode_t raster_mode = SURFACE_RASTER_MODE_UNKNOWN;    // Adreno unknown raster mode.
+  int raster_mode = 0;          // Adreno unknown raster mode.
   int padding_threshold = 512;  // Threshold for padding surfaces.
   // the function below computes aligned width and aligned height
   // based on linear or macro tile mode selected.
@@ -126,12 +130,12 @@ void AdrenoMemInfo::AlignUnCompressedRGB(int width, int height, int format, int 
     // num_samples is 1 always. We may  have to add uitility function to
     // find out these if there is a need to call this API for YUV formats.
     LINK_adreno_compute_fmt_aligned_width_and_height(
-        width, height, 0 /*plane_id*/, GetGpuPixelFormat(format), 1 /*num_samples*/, tile_mode,
+        width, height, 0 /*plane_id*/, GetGpuPixelFormat(format), 1 /*num_samples*/, tile_enabled,
         raster_mode, padding_threshold, reinterpret_cast<int *>(aligned_w),
         reinterpret_cast<int *>(aligned_h));
   } else if (LINK_adreno_compute_aligned_width_and_height) {
     LINK_adreno_compute_aligned_width_and_height(
-        width, height, bpp, tile_mode, raster_mode, padding_threshold,
+        width, height, bpp, tile_enabled, raster_mode, padding_threshold,
         reinterpret_cast<int *>(aligned_w), reinterpret_cast<int *>(aligned_h));
   } else if (LINK_adreno_compute_padding) {
     int surface_tile_height = 1;  // Linear surface
@@ -151,11 +155,12 @@ void AdrenoMemInfo::AlignCompressedRGB(int width, int height, int format, unsign
                                        unsigned int *aligned_h) {
   if (LINK_adreno_compute_compressedfmt_aligned_width_and_height) {
     int bytesPerPixel = 0;
-    surface_rastermode_t raster_mode = SURFACE_RASTER_MODE_UNKNOWN;   // Adreno unknown raster mode.
-    int padding_threshold = 512;  // Threshold for padding surfaces.
+    int raster_mode = 0;          // Adreno unknown raster mode.
+    int padding_threshold = 512;  // Threshold for padding
+    // surfaces.
 
     LINK_adreno_compute_compressedfmt_aligned_width_and_height(
-        width, height, format, SURFACE_TILE_MODE_DISABLE, raster_mode, padding_threshold,
+        width, height, format, 0, raster_mode, padding_threshold,
         reinterpret_cast<int *>(aligned_w), reinterpret_cast<int *>(aligned_h), &bytesPerPixel);
   } else {
     *aligned_w = (unsigned int)ALIGN(width, 32);
@@ -209,8 +214,6 @@ ADRENOPIXELFORMAT AdrenoMemInfo::GetGpuPixelFormat(int hal_format) {
        return ADRENO_PIXELFORMAT_R16G16B16A16_FLOAT;
     case HAL_PIXEL_FORMAT_NV12_ENCODEABLE:
       return ADRENO_PIXELFORMAT_NV12;
-    case HAL_PIXEL_FORMAT_NV21_ENCODEABLE:
-      return ADRENO_PIXELFORMAT_NV21;
     case HAL_PIXEL_FORMAT_YCbCr_420_SP_VENUS:
     case HAL_PIXEL_FORMAT_YCbCr_420_SP_VENUS_UBWC:
       return ADRENO_PIXELFORMAT_NV12_EXT;
@@ -314,8 +317,7 @@ int AdrenoMemInfo::AdrenoInitMemoryLayout(void *metadata_blob, int width, int he
 
 uint32_t AdrenoMemInfo::AdrenoGetAlignedGpuBufferSize(void *metadata_blob) {
   if (LINK_adreno_get_aligned_gpu_buffer_size) {
-    uint64_t size = LINK_adreno_get_aligned_gpu_buffer_size(metadata_blob);
-    return static_cast<uint32_t>(size);
+    return LINK_adreno_get_aligned_gpu_buffer_size(metadata_blob);
   }
   return -1;
 }
@@ -333,15 +335,6 @@ bool AdrenoMemInfo::IsPISupportedByGPU(int format, uint64_t usage) {
   if (LINK_adreno_isPISupportedByGpu) {
     return LINK_adreno_isPISupportedByGpu(format, usage);
   }
-
-  // TODO(user): Remove later once Adreno API is available
-  if ((usage & BufferUsage::GPU_RENDER_TARGET)) {
-    return false;
-  }
-  if ((usage & BufferUsage::GPU_TEXTURE)) {
-    return true;
-  }
-
   return false;
 }
 

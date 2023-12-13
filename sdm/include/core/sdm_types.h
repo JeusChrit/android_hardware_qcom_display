@@ -60,7 +60,6 @@ enum DisplayError {
   kErrorCriticalResource,   //!< Critical resource allocation has failed.
   kErrorDeviceRemoved,    //!< A device was removed unexpectedly.
   kErrorDriverData,       //!< Expected information from the driver is missing
-  kErrorDeferred,         //!< Call's intended action is being deferred to a later time
 };
 
 /*! @brief This structure is defined for client and library compatibility check purpose only. This
@@ -90,8 +89,6 @@ enum DebugTag {
   kTagQOSClient,        //!< Debug log is tagged for Qos client.
   kTagDisplay,          //!< Debug log is tagged for display core logs.
   kTagClient,           //!< Debug log is tagged for SDM client.
-  kTagQOSImpl,          //!< Debug log is tagged for Qos library Implementation.
-  kTagStitchBuffer,     //!< Debug log is tagged for Stitch Buffer Implementation.
 };
 
 }  // namespace sdm

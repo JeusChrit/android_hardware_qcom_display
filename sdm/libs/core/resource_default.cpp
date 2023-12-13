@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2014-2016, 2018-2020, The Linux Foundation. All rights reserved.
+* Copyright (c) 2014-2016, 2018, The Linux Foundation. All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without modification, are permitted
 * provided that the following conditions are met:
@@ -110,7 +110,7 @@ DisplayError ResourceDefault::Init() {
     src_pipes_[i].priority = INT(i);
   }
 
-  DLOGI("hw_ver=%x, DMA=%d RGB=%d VIG=%d", hw_res_info_.hw_version, hw_res_info_.num_dma_pipe,
+  DLOGI("hw_rev=%x, DMA=%d RGB=%d VIG=%d", hw_res_info_.hw_revision, hw_res_info_.num_dma_pipe,
     hw_res_info_.num_rgb_pipe, hw_res_info_.num_vig_pipe);
 
   if (hw_res_info_.max_scale_down < 1 || hw_res_info_.max_scale_up < 1) {
@@ -195,6 +195,8 @@ DisplayError ResourceDefault::ReconfigureDisplay(Handle display_ctx,
                                                  const HWDisplayAttributes &display_attributes,
                                                  const HWPanelInfo &hw_panel_info,
                                                  const HWMixerAttributes &mixer_attributes) {
+  SCOPE_LOCK(locker_);
+
   DisplayResourceContext *display_resource_ctx =
                           reinterpret_cast<DisplayResourceContext *>(display_ctx);
 
@@ -205,10 +207,14 @@ DisplayError ResourceDefault::ReconfigureDisplay(Handle display_ctx,
 }
 
 DisplayError ResourceDefault::Start(Handle display_ctx) {
+  locker_.Lock();
+
   return kErrorNone;
 }
 
 DisplayError ResourceDefault::Stop(Handle display_ctx, HWLayers *hw_layers) {
+  locker_.Unlock();
+
   return kErrorNone;
 }
 
@@ -317,20 +323,25 @@ CleanupOnError:
 }
 
 DisplayError ResourceDefault::PostPrepare(Handle display_ctx, HWLayers *hw_layers) {
+  SCOPE_LOCK(locker_);
+
   return kErrorNone;
 }
 
 DisplayError ResourceDefault::Commit(Handle display_ctx, HWLayers *hw_layers) {
+  SCOPE_LOCK(locker_);
+
   return kErrorNone;
 }
 
 DisplayError ResourceDefault::PostCommit(Handle display_ctx, HWLayers *hw_layers) {
+  SCOPE_LOCK(locker_);
   DisplayResourceContext *display_resource_ctx =
                           reinterpret_cast<DisplayResourceContext *>(display_ctx);
   HWBlockType hw_block_type = display_resource_ctx->hw_block_type;
   uint64_t frame_count = display_resource_ctx->frame_count;
 
-  DLOGV_IF(kTagResources, "Resource for hw_block = %d, frame_count = %" PRIu64 , hw_block_type,
+  DLOGV_IF(kTagResources, "Resource for hw_block = %d, frame_count = %d", hw_block_type,
            frame_count);
 
   // handoff pipes which are used by splash screen
@@ -343,12 +354,17 @@ DisplayError ResourceDefault::PostCommit(Handle display_ctx, HWLayers *hw_layers
     }
   }
 
+  if (hw_layers->info.sync_handle >= 0)
+    Sys::close_(hw_layers->info.sync_handle);
+
   display_resource_ctx->frame_count++;
 
   return kErrorNone;
 }
 
 void ResourceDefault::Purge(Handle display_ctx) {
+  SCOPE_LOCK(locker_);
+
   DisplayResourceContext *display_resource_ctx =
                           reinterpret_cast<DisplayResourceContext *>(display_ctx);
   HWBlockType hw_block_type = display_resource_ctx->hw_block_type;
@@ -362,6 +378,8 @@ void ResourceDefault::Purge(Handle display_ctx) {
 }
 
 DisplayError ResourceDefault::SetMaxMixerStages(Handle display_ctx, uint32_t max_mixer_stages) {
+  SCOPE_LOCK(locker_);
+
   return kErrorNone;
 }
 
@@ -928,11 +946,6 @@ DisplayError ResourceDefault::GetScaleLutConfig(HWScaleLutInfo *lut_info) {
 
 DisplayError ResourceDefault::SetDetailEnhancerData(Handle display_ctx,
                                                     const DisplayDetailEnhancerData &de_data) {
-  return kErrorNotSupported;
-}
-
-DisplayError ResourceDefault::UpdateSyncHandle(Handle display_ctx,
-                                               const shared_ptr<Fence> &sync_handle) {
   return kErrorNotSupported;
 }
 
