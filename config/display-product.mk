@@ -130,13 +130,12 @@ PRODUCT_PROPERTY_OVERRIDES += \
     debug.sf.enable_gl_backpressure=1 \
     debug.sf.enable_advanced_sf_phase_offset=1 \
     debug.sf.use_phase_offsets_as_durations=1 \
+    debug.sf.early.sf.duration=16000000 \
+    debug.sf.early.app.duration=16500000 \
+    debug.sf.earlyGl.sf.duration=13500000 \
+    debug.sf.earlyGl.app.duration=21000000 \
     debug.sf.late.sf.duration=10500000 \
-    debug.sf.late.app.duration=16600000 \
-    debug.sf.early.sf.duration=16600000 \
-    debug.sf.early.app.duration=16600000 \
-    debug.sf.earlyGl.sf.duration=16600000 \
-    debug.sf.earlyGl.app.duration=16600000
-    
+    debug.sf.late.app.duration=20500000
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),lito)
@@ -147,9 +146,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
     debug.sf.perf_fps_late_sf_phase_offset_ns=-5000000 \
     debug.sf.perf_fps_early_phase_offset_ns=-5000000 \
     debug.sf.perf_fps_early_gl_phase_offset_ns=-5000000 \
-    debug.sf.enable_advanced_sf_phase_offset=1 \
-    debug.sf.frame_rate_multiple_threshold=120 \
-    debug.sf.treat_170m_as_sRGB=1
+    debug.sf.enable_advanced_sf_phase_offset=1
 endif
 
 ifeq ($(TARGET_FWK_SUPPORTS_FULL_VALUEADDS), true)
