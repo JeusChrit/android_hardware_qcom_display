@@ -140,12 +140,12 @@ PRODUCT_PROPERTY_OVERRIDES += \
     debug.sf.enable_gl_backpressure=1 \
     debug.sf.enable_advanced_sf_phase_offset=1 \
     debug.sf.use_phase_offsets_as_durations=1 \
-    debug.sf.early.sf.duration=33000000 \
-    debug.sf.early.app.duration=16500000 \
-    debug.sf.earlyGl.sf.duration=33000000 \
-    debug.sf.earlyGl.app.duration=16500000 \
-    debug.sf.late.sf.duration=33000000 \
-    debug.sf.late.app.duration=16500000
+    debug.sf.early.sf.duration=4200000000 \
+    debug.sf.early.app.duration=30000000 \
+    debug.sf.earlyGl.sf.duration=4200000000 \
+    debug.sf.earlyGl.app.duration=30000000 \
+    debug.sf.late.sf.duration=4200000000 \
+    debug.sf.late.app.duration=30000000
 endif
 
 ifeq ($(TARGET_BOARD_PLATFORM),lito)
